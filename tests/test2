@@ -1,2 +1,2 @@
-StdCamer.dsgVar(5) = dsgVar(10);
-PressedBut(2)
+Rayman.dsgVar(5) = dsgVar(10);
+StdCamer.SetHitPointsInit();
