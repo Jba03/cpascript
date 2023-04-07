@@ -68,11 +68,13 @@ expressionSequence
 
 singleExpression
     : singleExpression fieldAccessOperator singleExpression
+    | singleExpression fieldAccessOperator vectorComponent
     | '++' singleExpression
     | '--' singleExpression
     | unaryOperator singleExpression
     | singleExpression arithmeticOperator singleExpression
-    | singleExpression conditionalOperator singleExpression
+    | singleExpression comparisonOperator singleExpression
+    | singleExpression logicalOperator singleExpression
     | singleExpression '?' singleExpression ':' singleExpression
     | singleExpression assignmentOperator singleExpression
     | Self
@@ -100,10 +102,13 @@ arithmeticOperator
     | ('+' | '-')
     ;
 
-conditionalOperator
+comparisonOperator
     : ('<' | '>' | '<=' | '>=')
     | ('==' | '!=')
-    | '&&'
+    ;
+
+logicalOperator
+    : '&&'
     | '||'
     ;
 

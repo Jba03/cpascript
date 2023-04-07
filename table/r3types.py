@@ -1422,7 +1422,7 @@ Procedures = [ # TODO: Correct
 ]
 
 Conditions = [
-    "&&", 
+    "&&",
     "||",
     "!",
     "^",
@@ -1544,4 +1544,13 @@ Conditions = [
     "Cam_IsFlagNoTargetParsing", "Cam_IsFlagNoTargetInertia", "Cam_IsFlagNoObstacle", "Cam_IsFlagFixedOrientation",
     "Cam_IsFlagForcedPosition", "Cam_IsFlagForcedTarget", "Cam_IsFlagForcedAxis", "SND_IsInStereoMode",
     "SND_IsMusicPlaying", "SND_IsVoicePlaying", "SND_IsEventValid"
+]
+
+Fields = [
+    "Position", "Orientation", "Speed", "NormSpeed",
+    "AbsoluteAxisX", "AbsoluteAxisY", "AbsoluteAxisZ",
+    "PrevComportIntell", "PrevComportReflex", "ShadowScaleX",
+    "ShadowScaleY", "PadGlobalVector", "PadHorizontalAxis",
+    "PadVerticalAxis", "PadAnalogForce", "PadTrueAnalogForce",
+    "PadRotationAngle", "PadSector", "SystemDate", "SystemTime"
 ]

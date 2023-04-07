@@ -1,2 +1,4 @@
-Rayman.dsgVar(5) = dsgVar(10);
-StdCamer.SetHitPointsInit();
+//ImposeSpeedX(dsgVar(1));
+//RotatePersoAroundZ(dsgVar(1));
+
+KillPerso(self);

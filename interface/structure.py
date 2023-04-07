@@ -37,6 +37,7 @@ class Macro:
         self.currentScript = level.readpointer()
         self.fullname = "".join(map(chr, self.name))
         self.name = self.fullname.split(':')[1]
+        self.name = self.name.split('\0')[0]
 
 class MacroList:
     macroList = None
@@ -139,6 +140,6 @@ class Actor:
 
     def findMacro(self, macroName):
         for macro in self.macros:
-            if macro.name == macroName:
+            if macroName == macro.name:
                 return macro
         return None

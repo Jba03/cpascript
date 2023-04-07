@@ -53,7 +53,11 @@ def findActor(name):
 
 # Listener
 class Listener(GenericListener):
+
+    # Access actor or dsgVar?
     dotAccess = False
+
+    # Current actor in dot access
     currentActor = None
 
     def enterSource(self, ctx):
@@ -90,26 +94,30 @@ class Listener(GenericListener):
         if not name:
             fail(ctx, "unnamed callable")
 
+        name = name.getText()
+
         # Attempt to find the method.
-        found = findCallable(name.getText())
+        found = findCallable(name)
         if found:
             type, index = found[0], found[1]
             if type == "condition": makeNode(NodeType.Condition, index)
             if type == "procedure": makeNode(NodeType.Procedure, index)
             if type == "function": # Function. Make sure it is called by dot access.
                 if self.dotAccess == True:
-                    fail(ctx, f"cannot call function \"{name.getText()}\" on an actor reference")
+                    fail(ctx, f"cannot call function \"{name}\" on an actor reference")
                 else:
                     makeNode(NodeType.Function, index)
+            d(+1)
             return
         elif self.dotAccess == False:
-            name = name.getText()
             global targetActor
             subroutine = targetActor.findMacro(name)
             if subroutine:
                 makeNode(NodeType.SubRoutine, subroutine.offset)
+                d(+1)
+                return
             else:
-                msg = f"no such subroutine \"{name}\" in actor {targetActor.name(instanceNames)}"
+                msg = f"no such method/subroutine \"{name}\" in actor {targetActor.name(instanceNames)}"
                 suggestions = []
                 for macro in targetActor.macros:
                     if macro.name.startswith(name[:10]): suggestions.append(macro.name)
@@ -119,13 +127,14 @@ class Listener(GenericListener):
                         msg += f"\t{s}\n"
                 fail(ctx, msg)
 
-        fail(ctx, f"no such callable method \"{name.getText()}\"")
+        fail(ctx, f"no such callable method \"{name}\"")
 
         d(+1)
 
     # Exit function call
     def exitFunctionCall(self, ctx):
         d(-1)
+        pass
 
     # Enter vector
     def enterVector(self, ctx):
@@ -135,6 +144,15 @@ class Listener(GenericListener):
     # Exit vector
     def exitVector(self, ctx):
         d(-1)
+
+    # # Enter vector component
+    # def enterVectorComponent(self, ctx):
+    #     if ctx.getText() == "x" || ctx.getText() == "X": makeNode(NodeType.)
+    #     makeNode(NodeType.Constant, int(ctx.getText()))
+    #
+    # # Exit vector component
+    # def exitVectorComponent(self, ctx):
+    #     pass
 
     # Enter expression sequence
     def enterExpressionSequence(self, ctx):
@@ -149,10 +167,34 @@ class Listener(GenericListener):
     def enterSingleExpression(self, ctx):
         fieldAccessOperator = ctx.fieldAccessOperator()
         arithmeticOperator = ctx.arithmeticOperator()
-        conditionalOperator = ctx.conditionalOperator()
+        comparisonOperator = ctx.comparisonOperator()
+        logicalOperator = ctx.logicalOperator()
         assignmentOperator = ctx.assignmentOperator()
+        unaryOperator = ctx.unaryOperator()
+        vectorComponent = ctx.vectorComponent()
         literal = ctx.literal()
+        self = ctx.Self()
         actorReference = ctx.actorReference()
+
+        def isVectorOp():
+             # X op Y
+            if len(ctx.children) > 2:
+                if ctx.children[0].vector() or ctx.children[2].vector():
+                    return True
+            # Functions which return vectors
+            #vectorFunctions = vectorFunctions()
+            #if isVector
+
+            return False
+
+        if self:
+            makeNode(NodeType.KeyWord, 19)
+
+        if vectorComponent:
+            if vectorComponent.getText() == "x" or vectorComponent.getText() == "X": makeNode(NodeType.Operator, 14)
+            if vectorComponent.getText() == "y" or vectorComponent.getText() == "Y": makeNode(NodeType.Operator, 15)
+            if vectorComponent.getText() == "z" or vectorComponent.getText() == "Z": makeNode(NodeType.Operator, 16)
+            d(+1)
 
         if fieldAccessOperator:
             if fieldAccessOperator.getText() == ".": makeNode(NodeType.Operator, 13)
@@ -160,26 +202,28 @@ class Listener(GenericListener):
             d(+1)
 
         if arithmeticOperator:
-            if arithmeticOperator.getText() ==  "+": makeNode(NodeType.Operator, 0)
-            if arithmeticOperator.getText() ==  "-": makeNode(NodeType.Operator, 1)
-            if arithmeticOperator.getText() ==  "*": makeNode(NodeType.Operator, 2)
-            if arithmeticOperator.getText() ==  "/": makeNode(NodeType.Operator, 3)
+            if arithmeticOperator.getText() ==  "+": makeNode(NodeType.Operator, 17 if isVectorOp() else 0)
+            if arithmeticOperator.getText() ==  "-": makeNode(NodeType.Operator, 18 if isVectorOp() else 1)
+            if arithmeticOperator.getText() ==  "*": makeNode(NodeType.Operator, 20 if isVectorOp() else 2)
+            if arithmeticOperator.getText() ==  "/": makeNode(NodeType.Operator, 21 if isVectorOp() else 3)
             if arithmeticOperator.getText() ==  "%": makeNode(NodeType.Operator, 5)
             if arithmeticOperator.getText() == "++": makeNode(NodeType.Operator, 10)
             if arithmeticOperator.getText() == "--": makeNode(NodeType.Operator, 11)
             d(+1)
 
-        if conditionalOperator:
-            if conditionalOperator.getText() == "&&": makeNode(NodeType.Condition, 0)
-            if conditionalOperator.getText() == "||": makeNode(NodeType.Condition, 1)
-            if conditionalOperator.getText() ==  "!": makeNode(NodeType.Condition, 2)
-            if conditionalOperator.getText() ==  "^": makeNode(NodeType.Condition, 3)
-            if conditionalOperator.getText() == "==": makeNode(NodeType.Condition, 4)
-            if conditionalOperator.getText() == "!=": makeNode(NodeType.Condition, 5)
-            if conditionalOperator.getText() ==  "<": makeNode(NodeType.Condition, 6)
-            if conditionalOperator.getText() ==  ">": makeNode(NodeType.Condition, 7)
-            if conditionalOperator.getText() == "<=": makeNode(NodeType.Condition, 8)
-            if conditionalOperator.getText() == ">=": makeNode(NodeType.Condition, 9)
+        if comparisonOperator:
+            if comparisonOperator.getText() == "==": makeNode(NodeType.Condition, 4)
+            if comparisonOperator.getText() == "!=": makeNode(NodeType.Condition, 5)
+            if comparisonOperator.getText() ==  "<": makeNode(NodeType.Condition, 6)
+            if comparisonOperator.getText() ==  ">": makeNode(NodeType.Condition, 7)
+            if comparisonOperator.getText() == "<=": makeNode(NodeType.Condition, 8)
+            if comparisonOperator.getText() == ">=": makeNode(NodeType.Condition, 9)
+            d(+1)
+
+        if logicalOperator:
+            if logicalOperator.getText() == "&&": makeNode(NodeType.Condition, 0)
+            if logicalOperator.getText() == "||": makeNode(NodeType.Condition, 1)
+            if logicalOperator.getText() ==  "^": makeNode(NodeType.Condition, 3)
             d(+1)
 
         if assignmentOperator:
@@ -188,6 +232,12 @@ class Listener(GenericListener):
             if assignmentOperator.getText() == "-=": makeNode(NodeType.Operator, 7)
             if assignmentOperator.getText() == "*=": makeNode(NodeType.Operator, 8)
             if assignmentOperator.getText() == "/=": makeNode(NodeType.Operator, 9)
+            d(+1)
+
+        if unaryOperator:
+            if unaryOperator.getText() == "+": pass # Do nothing
+            if unaryOperator.getText() == "-": makeNode(NodeType.Operator, 19 if isVectorOp() else 4)
+            if unaryOperator.getText() == "!": makeNode(NodeType.Condition, 2)
             d(+1)
 
 
@@ -207,14 +257,17 @@ class Listener(GenericListener):
     def exitSingleExpression(self, ctx):
         if ctx.arithmeticOperator(): d(-1)
         if ctx.assignmentOperator(): d(-1)
-        if ctx.conditionalOperator(): d(-1)
+        if ctx.comparisonOperator(): d(-1)
+        if ctx.logicalOperator(): d(-1)
+        if ctx.unaryOperator(): d(-1)
+        if ctx.vectorComponent(): d(-1)
         if ctx.fieldAccessOperator():
             self.dotAccess = False
             d(-1)
 
     # Enter literal
     def enterLiteral(self, ctx):
-        if ctx.numericLiteral(): makeNode(NodeType.Constant, ctx.numericLiteral().getText())
+        if ctx.numericLiteral(): makeNode(NodeType.Constant, int(ctx.numericLiteral().getText()))
         if ctx.StringLiteral(): makeNode(NodeType.String, ctx.StringLiteral().getText())
 
     # Exit literal
@@ -241,11 +294,12 @@ class Listener(GenericListener):
     # Enter DsgVar
     def enterDsgVar(self, ctx):
         if not ctx.numericLiteral(): fail(ctx, "dsgvar is missing numeric identifier")
-        makeNode(NodeType.DsgVarRef, ctx.numericLiteral().getText())
+        makeNode(NodeType.DsgVarRef2, int(ctx.numericLiteral().getText()))
 
     # Enter field
     def enterField(self, ctx):
-        makeNode(NodeType.Field, ctx.getText())
+        index = Fields.index(ctx.getText())
+        makeNode(NodeType.Field, index)
 
     # Exit field
     def exitField(self, ctx):
@@ -264,19 +318,31 @@ def writeTree(fileName):
         param, Type, depth = node[0], node[1], node[2]
         if type(param) is not int: param = 0
 
-        f.write(ctypes.c_uint(param)) # Param
+        f.write(ctypes.c_uint(swap32(param))) # Param
+        f.write(ctypes.c_byte(0)) # Padding
+        f.write(ctypes.c_byte(0)) # Padding
+        f.write(ctypes.c_byte(0)) # Padding
         f.write(ctypes.c_byte(Type)) # Type
+        f.write(ctypes.c_byte(0)) # Padding
+        f.write(ctypes.c_byte(0)) # Padding
         f.write(ctypes.c_byte(depth)) # Depth
+        f.write(ctypes.c_byte(0)) # Padding
     f.close()
 
+# def arborist(tree):
+#     for i in range(len(tree)):
+#         current = tree[i]
+#         if current[1] ==
+
 def main(argv):
-    if len(argv) < 4:
-        print("usage: compile.py <fix.lvl> <level.lvl> <sourcefile>")
+    if len(argv) < 5:
+        print("usage: compile.py [sourcefile] [target_actor@rule] [fix.lvl] [level.lvl]")
         exit()
 
-    fixFile = argv[1]
-    levelFile = argv[2]
-    sourceFile = argv[3]
+    sourceFile = argv[1]
+    target = argv[2]
+    fixFile = argv[3]
+    levelFile = argv[4]
 
     global fix
     global level
@@ -284,23 +350,38 @@ def main(argv):
 
     fix = LVL(fixFile)
     level = LVL(levelFile)
-    input_stream = FileStream(sourceFile)
+
+    try:
+        input_stream = FileStream(sourceFile)
+    except FileNotFoundError:
+        print(f"Could not find \"{sourceFile}\": no such file exists")
+        exit()
+
+    replacee = target.split('@')
+    if len(replacee) < 2: sys.exit("No target actor or rule specified.")
+    targetActorName = replacee[0]
+    targetActorRule = replacee[1]
 
     fix.loadAsFix()
     level.loadAsLevel(fix)
 
-    # fix.fillInPointers()
-    # level.fillInPointers()
-
     # level.otherFile = fix
     # fix.otherFile = level
 
+    # Read actor instance names
     level.readInstanceNames(instanceNames)
-    #level.loadActors()
 
-    targetActor = findActor("Rayman")
+    targetActor = findActor(targetActorName)
     if not targetActor:
-        print("invalid target actor")
+        print("Invalid target actor. Specify one of the following:")
+        for actor in level.actors:
+            print(f"\t{actor.name(instanceNames)}")
+        exit()
+
+    if not targetActor.findMacro(targetActorRule):
+        print("Invalid target replacee. Specify one of the following:")
+        for macro in targetActor.macros:
+            print(f"\t{macro.name}")
         exit()
 
     # for a in level.actors:
@@ -325,7 +406,7 @@ def main(argv):
 
     printTree()
 
-    #writeTree("test.bin")
+    writeTree("test.bin")
 
 if __name__ == '__main__':
     main(sys.argv)
